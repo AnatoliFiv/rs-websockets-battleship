@@ -11,7 +11,7 @@
         "lint": "eslint \"src/**/*.ts\"",
         "format": "prettier --write \"src/**/*.ts\""
     },
-    "author": "Andrei Auchynnikau",
+    "author": "Anatoli Fiventsau",
     "keywords": [],
     "license": "ISC",
     "dependencies": {

@@ -3,6 +3,7 @@ import type { ResponseMessage, AddShipsRequestData, Ship } from '../types/index.
 import type { Game } from '../types/index.js';
 import { Database } from '../database/index.js';
 import type { WSServer, ConnectionManager } from '../websocket/index.js';
+import { BOARD_SIZE, MIN_SHIP_LENGTH, MAX_SHIP_LENGTH } from '../constants/index.js';
 
 export class ShipsHandler {
   constructor(
@@ -11,7 +12,7 @@ export class ShipsHandler {
     private readonly connectionManager: ConnectionManager
   ) {}
 
-  handleAddShips(ws: WebSocket, data: AddShipsRequestData): void {
+  handleAddShips(data: AddShipsRequestData): void {
     const { gameId, ships, indexPlayer } = data;
 
     if (!this.validateShips(ships)) {
@@ -39,11 +40,10 @@ export class ShipsHandler {
   }
 
   private validateShips(ships: Ship[]): boolean {
-    const boardSize = 10;
     const occupied = new Set<string>();
 
     for (const ship of ships) {
-      if (!this.validateShip(ship, boardSize, occupied)) {
+      if (!this.validateShip(ship, BOARD_SIZE, occupied)) {
         return false;
       }
     }
@@ -54,7 +54,7 @@ export class ShipsHandler {
   private validateShip(ship: Ship, boardSize: number, occupied: Set<string>): boolean {
     const { position, direction, length } = ship;
 
-    if (length < 1 || length > 4) return false;
+    if (length < MIN_SHIP_LENGTH || length > MAX_SHIP_LENGTH) return false;
     if (position.x < 0 || position.x >= boardSize || position.y < 0 || position.y >= boardSize)
       return false;
 
@@ -75,58 +75,68 @@ export class ShipsHandler {
     return true;
   }
 
-  private startGame(gameId: number | string, game: Game, lastPlayerId: number | string): void {
-    const player1Id = game.player1Id;
-    const player2Id = game.player2Id;
-
-    const idPlayer1 = this.connectionManager.getGamePlayerIdByPlayerId(gameId, player1Id);
-    const idPlayer2 = this.connectionManager.getGamePlayerIdByPlayerId(gameId, player2Id);
+  private startGame(
+    gameId: number | string,
+    game: Game,
+    currentGamePlayerId: number | string
+  ): void {
+    const idPlayer1 = this.connectionManager.getGamePlayerIdByPlayerId(gameId, game.player1Id);
+    const idPlayer2 = this.connectionManager.getGamePlayerIdByPlayerId(gameId, game.player2Id);
 
     if (!idPlayer1 || !idPlayer2) return;
 
-    const playerId = this.connectionManager.getPlayerIdByGamePlayerId(gameId, lastPlayerId);
-    if (!playerId) return;
+    const currentPlayerId = this.connectionManager.getPlayerIdByGamePlayerId(
+      gameId,
+      currentGamePlayerId
+    );
+    if (!currentPlayerId) return;
 
-    const ws1 = this.connectionManager.getWebSocket(player1Id);
-    const ws2 = this.connectionManager.getWebSocket(player2Id);
+    const ws1 = this.connectionManager.getWebSocket(game.player1Id);
+    const ws2 = this.connectionManager.getWebSocket(game.player2Id);
 
-    game.currentPlayerId = playerId;
+    game.currentPlayerId = currentPlayerId;
     game.status = 'active';
     this.db.updateGame(gameId, game);
 
     if (ws1) {
-      const response1: ResponseMessage = {
-        type: 'start_game',
-        data: {
-          ships: game.player1Board.ships,
-          currentPlayerIndex: lastPlayerId,
-        },
-        id: 0,
-      };
-      this.wsServer.sendToClient(ws1, response1);
+      this.sendStartGameResponse(ws1, game.player1Board.ships, currentGamePlayerId);
     }
-
     if (ws2) {
-      const response2: ResponseMessage = {
-        type: 'start_game',
-        data: {
-          ships: game.player2Board.ships,
-          currentPlayerIndex: lastPlayerId,
-        },
-        id: 0,
-      };
-      this.wsServer.sendToClient(ws2, response2);
+      this.sendStartGameResponse(ws2, game.player2Board.ships, currentGamePlayerId);
     }
+    console.log('[Result] start_game');
 
-    const turnResponse: ResponseMessage = {
-      type: 'turn',
+    this.sendTurnToPlayers(ws1, ws2, currentGamePlayerId);
+  }
+
+  private sendStartGameResponse(
+    ws: WebSocket,
+    ships: Ship[],
+    currentPlayerIndex: number | string
+  ): void {
+    const response: ResponseMessage = {
+      type: 'start_game',
       data: {
-        currentPlayer: lastPlayerId,
+        ships,
+        currentPlayerIndex,
       },
       id: 0,
     };
+    this.wsServer.sendToClient(ws, response);
+  }
 
+  private sendTurnToPlayers(
+    ws1: WebSocket | null,
+    ws2: WebSocket | null,
+    currentPlayer: number | string
+  ): void {
+    const turnResponse: ResponseMessage = {
+      type: 'turn',
+      data: { currentPlayer },
+      id: 0,
+    };
     if (ws1) this.wsServer.sendToClient(ws1, turnResponse);
     if (ws2) this.wsServer.sendToClient(ws2, turnResponse);
+    console.log('[Result] turn');
   }
 }

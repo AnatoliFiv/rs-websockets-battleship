@@ -32,14 +32,6 @@ export class Database {
     return { player, error: false, errorText: '' };
   }
 
-  findPlayer(name: string, password: string): Player | null {
-    return (
-      Array.from(this.players.values()).find(
-        (player) => player.name === name && player.password === password
-      ) ?? null
-    );
-  }
-
   findPlayerByName(name: string): Player | null {
     return Array.from(this.players.values()).find((player) => player.name === name) ?? null;
   }

@@ -63,8 +63,6 @@ export class WSServer {
 
       if (this.router) {
         this.router.route(ws, message);
-      } else {
-        console.log(`[Result] ${message.type}`);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -102,14 +100,6 @@ export class WSServer {
     console.log(`URL: ws://localhost:${this.port}`);
   }
 
-  public getServer(): WebSocketServer {
-    return this.wss;
-  }
-
-  public getClients(): Set<WebSocket> {
-    return this.clients;
-  }
-
   public sendToClient(ws: WebSocket, message: ResponseMessage): boolean {
     try {
       if (ws.readyState !== WebSocket.OPEN) {
@@ -119,7 +109,6 @@ export class WSServer {
       const messageToSend = this.formatMessageForSending(message);
       const messageStr = JSON.stringify(messageToSend);
       ws.send(messageStr);
-      console.log(`[Result] ${message.type}`);
       return true;
     } catch {
       return false;
@@ -137,14 +126,7 @@ export class WSServer {
     this.clients.forEach((client) => {
       this.sendToClient(client, message);
     });
-  }
-
-  public sendToRoom(clients: WebSocket[], message: ResponseMessage): void {
-    clients.forEach((client) => {
-      if (this.clients.has(client)) {
-        this.sendToClient(client, message);
-      }
-    });
+    console.log(`[Result] ${message.type}`);
   }
 
   public async close(): Promise<void> {

@@ -27,6 +27,6 @@ export type {
   ResponseType,
 } from './messages.js';
 
-export type { Player, Room, GameBoard, Game, GameStatus, AttackResult } from './game.js';
+export type { Player, Room, GameBoard, Game, GameStatus } from './game.js';
 
 export type { Database } from './database.js';

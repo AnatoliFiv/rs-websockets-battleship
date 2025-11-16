@@ -34,7 +34,7 @@ export class UserHandler {
   }
 
   private validateUserData(name: string, password: string): boolean {
-    return (name.trim().length > 0 && password.trim().length > 0);
+    return name.trim().length > 0 && password.trim().length > 0;
   }
 
   private sendSuccessResponse(ws: WebSocket, name: string, index: number | string): void {
@@ -49,6 +49,7 @@ export class UserHandler {
       id: 0,
     };
     this.wsServer.sendToClient(ws, response);
+    console.log(`[Result] ${response.type}`);
   }
 
   private sendErrorResponse(ws: WebSocket, name: string, errorText: string): void {
@@ -63,6 +64,7 @@ export class UserHandler {
       id: 0,
     };
     this.wsServer.sendToClient(ws, response);
+    console.log(`[Result] ${response.type}`);
   }
 
   private broadcastRoomUpdate(): void {

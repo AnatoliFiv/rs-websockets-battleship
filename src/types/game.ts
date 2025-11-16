@@ -1,4 +1,4 @@
-import type { Ship, Position, AttackStatus, RoomUser } from './messages.js';
+import type { Ship, AttackStatus, RoomUser } from './messages.js';
 
 export interface Player {
   id: number | string;
@@ -30,10 +30,3 @@ export interface Game {
 }
 
 export type GameStatus = 'waiting' | 'ready' | 'active' | 'finished';
-
-export interface AttackResult {
-  position: Position;
-  status: AttackStatus;
-  isShipKilled: boolean;
-  killedShipCells?: Position[];
-}

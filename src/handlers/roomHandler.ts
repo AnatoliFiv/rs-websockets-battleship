@@ -85,6 +85,8 @@ export class RoomHandler {
         this.wsServer.sendToClient(ws2, response2);
       }
 
+      console.log('[Result] create_game');
+
       this.db.removeRoom(room.roomId);
     }
 

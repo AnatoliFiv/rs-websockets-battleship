@@ -4,9 +4,11 @@ import type {
   RegRequestData,
   AddUserToRoomRequestData,
   AddShipsRequestData,
+  AttackRequestData,
+  RandomAttackRequestData,
 } from '../types/index.js';
 import { Database } from '../database/index.js';
-import { UserHandler, RoomHandler, ShipsHandler } from '../handlers/index.js';
+import { UserHandler, RoomHandler, ShipsHandler, GameHandler } from '../handlers/index.js';
 import type { WSServer } from './server.js';
 import type { ConnectionManager } from './connectionManager.js';
 
@@ -14,6 +16,7 @@ export class MessageRouter {
   private readonly userHandler: UserHandler;
   private readonly roomHandler: RoomHandler;
   private readonly shipsHandler: ShipsHandler;
+  private readonly gameHandler: GameHandler;
 
   constructor(
     private readonly db: Database,
@@ -23,6 +26,7 @@ export class MessageRouter {
     this.userHandler = new UserHandler(db, wsServer, connectionManager);
     this.roomHandler = new RoomHandler(db, wsServer, connectionManager);
     this.shipsHandler = new ShipsHandler(db, wsServer, connectionManager);
+    this.gameHandler = new GameHandler(db, wsServer, connectionManager);
   }
 
   route(ws: WebSocket, message: RequestMessage): void {
@@ -38,34 +42,26 @@ export class MessageRouter {
           this.handleAddUserToRoom(ws, message);
           break;
         case 'add_ships':
-          this.handleAddShips(ws, message);
+          this.handleAddShips(message);
+          break;
+        case 'attack':
+          this.handleAttack(message);
+          break;
+        case 'randomAttack':
+          this.handleRandomAttack(message);
           break;
         default:
-          console.log(`[Command] ${message.type}`);
           console.log(`[Result] ${message.type}`);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      console.log(`[Command] ${message.type}`);
       console.log(`[Result] Error: ${errorMessage}`);
     }
   }
 
   private handleReg(ws: WebSocket, message: RequestMessage): void {
-    let data: RegRequestData;
-
-    if (typeof message.data === 'string') {
-      try {
-        data = JSON.parse(message.data) as RegRequestData;
-      } catch {
-        console.log(`[Command] ${message.type}`);
-        console.log('[Result] Error: Invalid JSON in data');
-        return;
-      }
-    } else {
-      data = message.data as RegRequestData;
-    }
-
+    const data = this.parseMessageData<RegRequestData>(message);
+    if (!data) return;
     this.userHandler.handleReg(ws, data);
   }
 
@@ -74,39 +70,39 @@ export class MessageRouter {
   }
 
   private handleAddUserToRoom(ws: WebSocket, message: RequestMessage): void {
-    let data: AddUserToRoomRequestData;
-
-    if (typeof message.data === 'string') {
-      try {
-        data = JSON.parse(message.data) as AddUserToRoomRequestData;
-      } catch {
-        console.log(`[Command] ${message.type}`);
-        console.log('[Result] Error: Invalid JSON in data');
-        return;
-      }
-    } else {
-      data = message.data as AddUserToRoomRequestData;
-    }
-
+    const data = this.parseMessageData<AddUserToRoomRequestData>(message);
+    if (!data) return;
     this.roomHandler.handleAddUserToRoom(ws, data);
   }
 
-  private handleAddShips(ws: WebSocket, message: RequestMessage): void {
-    let data: AddShipsRequestData;
+  private handleAddShips(message: RequestMessage): void {
+    const data = this.parseMessageData<AddShipsRequestData>(message);
+    if (!data) return;
+    this.shipsHandler.handleAddShips(data);
+  }
 
+  private handleAttack(message: RequestMessage): void {
+    const data = this.parseMessageData<AttackRequestData>(message);
+    if (!data) return;
+    this.gameHandler.handleAttack(data);
+  }
+
+  private handleRandomAttack(message: RequestMessage): void {
+    const data = this.parseMessageData<RandomAttackRequestData>(message);
+    if (!data) return;
+    this.gameHandler.handleRandomAttack(data);
+  }
+
+  private parseMessageData<T>(message: RequestMessage): T | null {
     if (typeof message.data === 'string') {
       try {
-        data = JSON.parse(message.data) as AddShipsRequestData;
+        return JSON.parse(message.data) as T;
       } catch {
-        console.log(`[Command] ${message.type}`);
         console.log('[Result] Error: Invalid JSON in data');
-        return;
+        return null;
       }
-    } else {
-      data = message.data as AddShipsRequestData;
     }
-
-    this.shipsHandler.handleAddShips(ws, data);
+    return message.data as T;
   }
 
   removeConnection(ws: WebSocket): void {
