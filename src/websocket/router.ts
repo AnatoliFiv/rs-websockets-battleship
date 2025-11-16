@@ -1,13 +1,19 @@
 import type { WebSocket } from 'ws';
-import type { RequestMessage, RegRequestData, AddUserToRoomRequestData } from '../types/index.js';
+import type {
+  RequestMessage,
+  RegRequestData,
+  AddUserToRoomRequestData,
+  AddShipsRequestData,
+} from '../types/index.js';
 import { Database } from '../database/index.js';
-import { UserHandler, RoomHandler } from '../handlers/index.js';
+import { UserHandler, RoomHandler, ShipsHandler } from '../handlers/index.js';
 import type { WSServer } from './server.js';
 import type { ConnectionManager } from './connectionManager.js';
 
 export class MessageRouter {
   private readonly userHandler: UserHandler;
   private readonly roomHandler: RoomHandler;
+  private readonly shipsHandler: ShipsHandler;
 
   constructor(
     private readonly db: Database,
@@ -16,6 +22,7 @@ export class MessageRouter {
   ) {
     this.userHandler = new UserHandler(db, wsServer, connectionManager);
     this.roomHandler = new RoomHandler(db, wsServer, connectionManager);
+    this.shipsHandler = new ShipsHandler(db, wsServer, connectionManager);
   }
 
   route(ws: WebSocket, message: RequestMessage): void {
@@ -29,6 +36,9 @@ export class MessageRouter {
           break;
         case 'add_user_to_room':
           this.handleAddUserToRoom(ws, message);
+          break;
+        case 'add_ships':
+          this.handleAddShips(ws, message);
           break;
         default:
           console.log(`[Command] ${message.type}`);
@@ -79,6 +89,24 @@ export class MessageRouter {
     }
 
     this.roomHandler.handleAddUserToRoom(ws, data);
+  }
+
+  private handleAddShips(ws: WebSocket, message: RequestMessage): void {
+    let data: AddShipsRequestData;
+
+    if (typeof message.data === 'string') {
+      try {
+        data = JSON.parse(message.data) as AddShipsRequestData;
+      } catch {
+        console.log(`[Command] ${message.type}`);
+        console.log('[Result] Error: Invalid JSON in data');
+        return;
+      }
+    } else {
+      data = message.data as AddShipsRequestData;
+    }
+
+    this.shipsHandler.handleAddShips(ws, data);
   }
 
   removeConnection(ws: WebSocket): void {

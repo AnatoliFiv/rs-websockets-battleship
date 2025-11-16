@@ -21,7 +21,7 @@ export class RoomHandler {
       return;
     }
 
-    const room = this.db.createRoom(playerId, player.name, playerId);
+    this.db.createRoom(playerId, player.name, playerId);
     this.broadcastRoomUpdate();
   }
 
@@ -47,8 +47,16 @@ export class RoomHandler {
 
       const game = this.db.createGame(room.roomId, player1Id, player2Id);
 
-      const player1GameId = this.connectionManager.generateGamePlayerId();
-      const player2GameId = this.connectionManager.generateGamePlayerId();
+      const idPlayer1 = this.connectionManager.generateGamePlayerId();
+      const idPlayer2 = this.connectionManager.generateGamePlayerId();
+
+      this.connectionManager.setGameMapping(
+        game.gameId,
+        player1Id,
+        player2Id,
+        idPlayer1,
+        idPlayer2
+      );
 
       const ws1 = this.connectionManager.getWebSocket(player1Id);
       const ws2 = this.connectionManager.getWebSocket(player2Id);
@@ -58,7 +66,7 @@ export class RoomHandler {
           type: 'create_game',
           data: {
             idGame: game.gameId,
-            idPlayer: player1GameId,
+            idPlayer: idPlayer1,
           },
           id: 0,
         };
@@ -70,7 +78,7 @@ export class RoomHandler {
           type: 'create_game',
           data: {
             idGame: game.gameId,
-            idPlayer: player2GameId,
+            idPlayer: idPlayer2,
           },
           id: 0,
         };
