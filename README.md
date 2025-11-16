@@ -1,31 +1,78 @@
-# RSSchool NodeJS websocket task template
-> Static http server and base task packages. 
-> By default WebSocket client tries to connect to the 3000 port.
+# WebSocket Battleship Server
+
+Backend server for Battleship game implemented with TypeScript and WebSocket for real-time multiplayer gameplay.
 
 ## Installation
-1. Clone/download repo
-2. `npm install`
+
+```bash
+npm install
+```
 
 ## Usage
-**Development**
 
-`npm run start:dev`
+**Development:**
 
-* App served @ `http://localhost:8181` with nodemon
+```bash
+npm run start:dev
+```
 
-**Production**
+**Production:**
 
-`npm run start`
+```bash
+npm run start
+```
 
-* App served @ `http://localhost:8181` without nodemon
+- HTTP server: `http://localhost:8181`
+- WebSocket server: `ws://localhost:3000`
+
+## Features
+
+- Player registration and authentication
+- Game room creation and joining
+- Ship placement with validation
+- Real-time game attacks and turns
+- Winner tracking and statistics
+- Single play bot
+
+## WebSocket Commands
+
+### Client → Server
+
+- `reg` - Register/login player
+- `create_room` - Create game room
+- `add_user_to_room` - Join room
+- `add_ships` - Place ships
+- `attack` - Attack coordinates
+- `randomAttack` - Random attack
+- `single_play` - Play with bot
+
+### Server → Client
+
+- `reg` - Registration result
+- `update_room` - Room list update
+- `update_winners` - Winners table update
+- `create_game` - Game created
+- `start_game` - Game started
+- `turn` - Current player turn
+- `attack` - Attack result
+- `finish` - Game finished
+
+## Tech Stack
+
+- **Node.js** 24.x.x
+- **TypeScript** 5.9.3
+- **WebSocket** (ws 8.8.0)
+
+## Scripts
+
+```bash
+npm run start
+npm run start:dev
+npm run lint
+npm run format
+npm run build
+```
 
 ---
 
-**All commands**
-
-Command | Description
---- | ---
-`npm run start:dev` | App served @ `http://localhost:8181` with nodemon
-`npm run start` | App served @ `http://localhost:8181` without nodemon
-
-**Note**: replace `npm` with `yarn` in `package.json` if you use yarn.
+**Note**: Replace `npm` with `yarn` if you use yarn.
