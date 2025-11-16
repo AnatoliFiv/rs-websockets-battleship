@@ -67,7 +67,9 @@ export class GameHandler {
     const { enemyBoard, enemyId } = this.getBoards(game, attackerId);
     const key = `${x},${y}`;
 
-    if (enemyBoard.attacks.has(key)) return;
+    if (enemyBoard.attacks.has(key)) {
+      return;
+    }
 
     const ship = this.findShipAt(enemyBoard, x, y);
     let status: AttackStatus = 'miss';
@@ -97,7 +99,9 @@ export class GameHandler {
 
     const attackerGameId = this.connectionManager.getGamePlayerIdByPlayerId(gameId, attackerId);
     const defenderGameId = this.connectionManager.getGamePlayerIdByPlayerId(gameId, enemyId);
-    if (!attackerGameId || !defenderGameId) return;
+    if (!attackerGameId || !defenderGameId) {
+      return;
+    }
 
     const nextPlayerId = status === 'miss' ? enemyId : attackerId;
     const nextGamePlayerId = status === 'miss' ? defenderGameId : attackerGameId;
@@ -105,11 +109,13 @@ export class GameHandler {
     game.currentPlayerId = nextPlayerId;
     this.db.updateGame(gameId, game);
 
+    const currentPlayerForAttack = attackerGameId;
+
     const attackResponse: ResponseMessage = {
       type: 'attack',
       data: {
         position: { x, y },
-        currentPlayer: nextGamePlayerId,
+        currentPlayer: currentPlayerForAttack,
         status,
       } as AttackResponseData,
       id: 0,
@@ -118,7 +124,7 @@ export class GameHandler {
     this.broadcastToGamePlayers(game, attackResponse);
 
     if (status === 'killed' && killedShipCells) {
-      this.sendSurroundingMisses(game, enemyBoard, killedShipCells, nextGamePlayerId);
+      this.sendSurroundingMisses(game, enemyBoard, killedShipCells, currentPlayerForAttack);
     }
 
     const defenderShipsAlive = this.hasAliveShips(enemyBoard);
