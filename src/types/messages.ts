@@ -117,7 +117,8 @@ export type RequestType =
   | 'add_user_to_room'
   | 'add_ships'
   | 'attack'
-  | 'randomAttack';
+  | 'randomAttack'
+  | 'single_play';
 
 export type ResponseType =
   | 'reg'

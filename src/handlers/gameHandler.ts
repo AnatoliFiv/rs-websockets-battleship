@@ -14,13 +14,20 @@ import type {
 import { Database } from '../database/index.js';
 import type { WSServer, ConnectionManager } from '../websocket/index.js';
 import { BOARD_SIZE, CELL_DIRECTIONS } from '../constants/index.js';
+import type { BotHandler } from '../bot/index.js';
 
 export class GameHandler {
+  private botHandler: BotHandler | null = null;
+
   constructor(
     private readonly db: Database,
     private readonly wsServer: WSServer,
     private readonly connectionManager: ConnectionManager
   ) {}
+
+  setBotHandler(botHandler: BotHandler): void {
+    this.botHandler = botHandler;
+  }
 
   handleAttack(data: AttackRequestData): void {
     const { gameId, x, y, indexPlayer } = data;
@@ -124,6 +131,14 @@ export class GameHandler {
     };
 
     this.broadcastToGamePlayers(game, turnResponse);
+
+    if (this.botHandler) {
+      if (this.connectionManager.isBotGamePlayer(gameId, nextGamePlayerId)) {
+        this.botHandler.handleBotTurn(gameId, nextGamePlayerId);
+      } else {
+        this.botHandler.cancelBotTurn(gameId);
+      }
+    }
   }
 
   private getBoards(
@@ -196,10 +211,20 @@ export class GameHandler {
     winnerPlayerId: number | string,
     winnerGamePlayerId: number | string
   ): void {
+    if (this.botHandler) {
+      this.botHandler.cancelBotTurn(gameId);
+    }
+
     game.status = 'finished';
     this.db.updateGame(gameId, game);
 
-    this.db.updatePlayerWins(winnerPlayerId);
+    const botPlayerId = this.connectionManager.getPlayerIdByGamePlayerId(
+      gameId,
+      winnerGamePlayerId
+    );
+    if (!botPlayerId || !this.botHandler?.isBot(botPlayerId)) {
+      this.db.updatePlayerWins(winnerPlayerId);
+    }
 
     const finishResponse: ResponseMessage = {
       type: 'finish',

@@ -2,6 +2,7 @@ import type { WebSocket } from 'ws';
 import type { ResponseMessage, AddUserToRoomRequestData } from '../types/index.js';
 import { Database } from '../database/index.js';
 import type { WSServer, ConnectionManager } from '../websocket/index.js';
+import { broadcastRoomUpdate } from '../utils/index.js';
 
 export class RoomHandler {
   constructor(
@@ -22,7 +23,7 @@ export class RoomHandler {
     }
 
     this.db.createRoom(playerId, player.name, playerId);
-    this.broadcastRoomUpdate();
+    broadcastRoomUpdate(this.db, this.wsServer);
   }
 
   handleAddUserToRoom(ws: WebSocket, data: AddUserToRoomRequestData): void {
@@ -90,19 +91,6 @@ export class RoomHandler {
       this.db.removeRoom(room.roomId);
     }
 
-    this.broadcastRoomUpdate();
-  }
-
-  private broadcastRoomUpdate(): void {
-    const rooms = this.db.getAvailableRooms();
-    const response: ResponseMessage = {
-      type: 'update_room',
-      data: rooms.map((room) => ({
-        roomId: room.roomId,
-        roomUsers: room.users,
-      })),
-      id: 0,
-    };
-    this.wsServer.sendToAll(response);
+    broadcastRoomUpdate(this.db, this.wsServer);
   }
 }

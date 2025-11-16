@@ -11,3 +11,6 @@ export const CELL_DIRECTIONS: ReadonlyArray<[number, number]> = [
   [1, 0],
   [1, 1],
 ] as const;
+
+export const BOT_NAME = 'Bot';
+export const BOT_ATTACK_DELAY_MS = 1000;

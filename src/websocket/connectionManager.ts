@@ -12,6 +12,7 @@ export class ConnectionManager {
   private readonly playerIdToWs = new Map<number | string, WebSocket>();
   private gamePlayerIdCounter = 1;
   private readonly gamePlayerMapping = new Map<number | string, GamePlayerMapping>();
+  private readonly botGamePlayers = new Map<number | string, number | string>();
 
   setPlayer(ws: WebSocket, playerId: number | string): void {
     const oldPlayerId = this.wsToPlayerId.get(ws);
@@ -43,7 +44,13 @@ export class ConnectionManager {
     return this.gamePlayerIdCounter++;
   }
 
-  setGameMapping(gameId: number | string, player1Id: number | string, player2Id: number | string, idPlayer1: number | string, idPlayer2: number | string): void {
+  setGameMapping(
+    gameId: number | string,
+    player1Id: number | string,
+    player2Id: number | string,
+    idPlayer1: number | string,
+    idPlayer2: number | string
+  ): void {
     this.gamePlayerMapping.set(gameId, {
       player1Id,
       player2Id,
@@ -52,7 +59,10 @@ export class ConnectionManager {
     });
   }
 
-  getPlayerIdByGamePlayerId(gameId: number | string, idPlayer: number | string): number | string | null {
+  getPlayerIdByGamePlayerId(
+    gameId: number | string,
+    idPlayer: number | string
+  ): number | string | null {
     const mapping = this.gamePlayerMapping.get(gameId);
     if (!mapping) return null;
 
@@ -61,7 +71,10 @@ export class ConnectionManager {
     return null;
   }
 
-  getGamePlayerIdByPlayerId(gameId: number | string, playerId: number | string): number | string | null {
+  getGamePlayerIdByPlayerId(
+    gameId: number | string,
+    playerId: number | string
+  ): number | string | null {
     const mapping = this.gamePlayerMapping.get(gameId);
     if (!mapping) return null;
 
@@ -72,5 +85,14 @@ export class ConnectionManager {
 
   removeGameMapping(gameId: number | string): void {
     this.gamePlayerMapping.delete(gameId);
+    this.botGamePlayers.delete(gameId);
+  }
+
+  setBotPlayer(gameId: number | string, botGamePlayerId: number | string): void {
+    this.botGamePlayers.set(gameId, botGamePlayerId);
+  }
+
+  isBotGamePlayer(gameId: number | string, gamePlayerId: number | string): boolean {
+    return this.botGamePlayers.get(gameId) === gamePlayerId;
   }
 }

@@ -9,6 +9,7 @@ import type {
 } from '../types/index.js';
 import { Database } from '../database/index.js';
 import { UserHandler, RoomHandler, ShipsHandler, GameHandler } from '../handlers/index.js';
+import { BotHandler } from '../bot/index.js';
 import type { WSServer } from './server.js';
 import type { ConnectionManager } from './connectionManager.js';
 
@@ -17,6 +18,7 @@ export class MessageRouter {
   private readonly roomHandler: RoomHandler;
   private readonly shipsHandler: ShipsHandler;
   private readonly gameHandler: GameHandler;
+  private readonly botHandler: BotHandler;
 
   constructor(
     private readonly db: Database,
@@ -27,6 +29,16 @@ export class MessageRouter {
     this.roomHandler = new RoomHandler(db, wsServer, connectionManager);
     this.shipsHandler = new ShipsHandler(db, wsServer, connectionManager);
     this.gameHandler = new GameHandler(db, wsServer, connectionManager);
+    this.botHandler = new BotHandler(
+      db,
+      wsServer,
+      connectionManager,
+      this.shipsHandler,
+      this.gameHandler
+    );
+
+    this.shipsHandler.setBotHandler(this.botHandler);
+    this.gameHandler.setBotHandler(this.botHandler);
   }
 
   route(ws: WebSocket, message: RequestMessage): void {
@@ -49,6 +61,9 @@ export class MessageRouter {
           break;
         case 'randomAttack':
           this.handleRandomAttack(message);
+          break;
+        case 'single_play':
+          this.handleSinglePlay(ws, message);
           break;
         default:
           console.log(`[Result] ${message.type}`);
@@ -91,6 +106,10 @@ export class MessageRouter {
     const data = this.parseMessageData<RandomAttackRequestData>(message);
     if (!data) return;
     this.gameHandler.handleRandomAttack(data);
+  }
+
+  private handleSinglePlay(ws: WebSocket, _message: RequestMessage): void {
+    this.botHandler.handleSinglePlay(ws);
   }
 
   private parseMessageData<T>(message: RequestMessage): T | null {

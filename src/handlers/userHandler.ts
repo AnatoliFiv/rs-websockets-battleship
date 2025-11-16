@@ -2,6 +2,7 @@ import type { WebSocket } from 'ws';
 import type { ResponseMessage, RegRequestData } from '../types/index.js';
 import { Database } from '../database/index.js';
 import type { WSServer, ConnectionManager } from '../websocket/index.js';
+import { broadcastRoomUpdate } from '../utils/index.js';
 
 export class UserHandler {
   constructor(
@@ -29,7 +30,7 @@ export class UserHandler {
     this.connectionManager.setPlayer(ws, player.id);
     this.sendSuccessResponse(ws, player.name, player.id);
 
-    this.broadcastRoomUpdate();
+    broadcastRoomUpdate(this.db, this.wsServer);
     this.broadcastWinnersUpdate();
   }
 
@@ -65,19 +66,6 @@ export class UserHandler {
     };
     this.wsServer.sendToClient(ws, response);
     console.log(`[Result] ${response.type}`);
-  }
-
-  private broadcastRoomUpdate(): void {
-    const rooms = this.db.getAvailableRooms();
-    const response: ResponseMessage = {
-      type: 'update_room',
-      data: rooms.map((room) => ({
-        roomId: room.roomId,
-        roomUsers: room.users,
-      })),
-      id: 0,
-    };
-    this.wsServer.sendToAll(response);
   }
 
   private broadcastWinnersUpdate(): void {

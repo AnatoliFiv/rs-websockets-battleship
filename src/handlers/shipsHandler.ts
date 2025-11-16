@@ -4,13 +4,20 @@ import type { Game } from '../types/index.js';
 import { Database } from '../database/index.js';
 import type { WSServer, ConnectionManager } from '../websocket/index.js';
 import { BOARD_SIZE, MIN_SHIP_LENGTH, MAX_SHIP_LENGTH } from '../constants/index.js';
+import type { BotHandler } from '../bot/index.js';
 
 export class ShipsHandler {
+  private botHandler: BotHandler | null = null;
+
   constructor(
     private readonly db: Database,
     private readonly wsServer: WSServer,
     private readonly connectionManager: ConnectionManager
   ) {}
+
+  setBotHandler(botHandler: BotHandler): void {
+    this.botHandler = botHandler;
+  }
 
   handleAddShips(data: AddShipsRequestData): void {
     const { gameId, ships, indexPlayer } = data;
@@ -107,6 +114,10 @@ export class ShipsHandler {
     console.log('[Result] start_game');
 
     this.sendTurnToPlayers(ws1, ws2, currentGamePlayerId);
+
+    if (this.botHandler && this.connectionManager.isBotGamePlayer(gameId, currentGamePlayerId)) {
+      this.botHandler.handleBotTurn(gameId, currentGamePlayerId);
+    }
   }
 
   private sendStartGameResponse(
