@@ -71,6 +71,7 @@ export class GameHandler {
 
     const ship = this.findShipAt(enemyBoard, x, y);
     let status: AttackStatus = 'miss';
+    let killedShipCells: Position[] | null = null;
 
     if (ship) {
       const shipCells = this.getShipCells(ship);
@@ -81,6 +82,7 @@ export class GameHandler {
 
       if (allHit) {
         status = 'killed';
+        killedShipCells = shipCells;
         shipCells.forEach((cell) => {
           enemyBoard.attacks.set(`${cell.x},${cell.y}`, 'shot');
         });
@@ -114,6 +116,10 @@ export class GameHandler {
     };
 
     this.broadcastToGamePlayers(game, attackResponse);
+
+    if (status === 'killed' && killedShipCells) {
+      this.sendSurroundingMisses(game, enemyBoard, killedShipCells, nextGamePlayerId);
+    }
 
     const defenderShipsAlive = this.hasAliveShips(enemyBoard);
 
@@ -192,6 +198,46 @@ export class GameHandler {
           board.attacks.set(key, 'miss');
         }
       });
+    });
+  }
+
+  private sendSurroundingMisses(
+    game: Game,
+    board: GameBoard,
+    shipCells: Position[],
+    currentPlayerId: number | string
+  ): void {
+    const surroundingCells = new Set<string>();
+
+    shipCells.forEach((cell) => {
+      CELL_DIRECTIONS.forEach(([dx, dy]) => {
+        const x = cell.x + dx;
+        const y = cell.y + dy;
+        if (x < 0 || x >= BOARD_SIZE || y < 0 || y >= BOARD_SIZE) return;
+
+        const isShipCell = shipCells.some((sc) => sc.x === x && sc.y === y);
+        if (isShipCell) return;
+
+        const key = `${x},${y}`;
+        const attackStatus = board.attacks.get(key);
+        if (!attackStatus || attackStatus === 'miss') {
+          surroundingCells.add(key);
+        }
+      });
+    });
+
+    surroundingCells.forEach((cellKey) => {
+      const [x, y] = cellKey.split(',').map(Number);
+      const missResponse: ResponseMessage = {
+        type: 'attack',
+        data: {
+          position: { x, y },
+          currentPlayer: currentPlayerId,
+          status: 'miss',
+        } as AttackResponseData,
+        id: 0,
+      };
+      this.broadcastToGamePlayers(game, missResponse);
     });
   }
 
